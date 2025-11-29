@@ -1,0 +1,212 @@
+local url = "https://raw.githubusercontent.com/dwyl/english-words/refs/heads/master/words.txt"
+
+local Words = {}
+local loaded = false
+local WordDictionary = {}
+
+local function LoadWords()
+    if loaded then return end
+    
+    local success, result = pcall(function()
+        local res = request({Url = url, Method = "GET"})
+        if res and res.Body then
+            for w in res.Body:gmatch("[^\r\n]+") do
+                if #w > 0 and #w < 15 then
+                    table.insert(Words, w)
+                    local firstLetter = w:sub(1,1):lower()
+                    if not WordDictionary[firstLetter] then
+                        WordDictionary[firstLetter] = {}
+                    end
+                    table.insert(WordDictionary[firstLetter], w)
+                end
+            end
+            loaded = true
+            print("Words loaded: " .. #Words)
+        end
+    end)
+    
+    if not success then
+        Words = {}
+        loaded = true
+    end
+end
+
+spawn(LoadWords)
+
+local function SuggestWords(input, count)
+    if not loaded then return {} end
+    if #Words == 0 then return {} end
+    
+    input = input:lower()
+    local possible = {}
+    local results = {}
+    local used = {}
+    
+    local firstLetter = input:sub(1,1)
+    local wordList = WordDictionary[firstLetter] or {}
+    
+    for i = 1, math.min(#wordList, 5000) do
+        local word = wordList[i]
+        if word:sub(1, #input):lower() == input then
+            table.insert(possible, word)
+            if #possible >= 500 then break end
+        end
+    end
+    
+    local maxResults = math.min(count, #possible)
+    for i = 1, maxResults do
+        if #possible == 0 then break end
+        local r = math.random(1, #possible)
+        table.insert(results, possible[r])
+        table.remove(possible, r)
+    end
+    
+    return results
+end
+
+local a = Instance.new("ScreenGui", game.CoreGui)
+a.Name = "WordSuggestor"
+
+local b = Instance.new("Frame", a)
+b.Size = UDim2.new(0, 250, 0, 300)
+b.Position = UDim2.new(0, 80, 0, 100)
+b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+b.BorderSizePixel = 0
+b.Active = true
+b.Draggable = true
+Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", b).Thickness = 1.5
+
+local title = Instance.new("TextLabel", b)
+title.Size = UDim2.new(1, -10, 0, 25)
+title.Position = UDim2.new(0,5,0,5)
+title.BackgroundTransparency = 1
+title.Text = "Type letters - get matching words"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextXAlignment = Enum.TextXAlignment.Center
+
+local info = Instance.new("TextLabel", b)
+info.Size = UDim2.new(1, -10, 0, 40)
+info.Position = UDim2.new(0,5,0,30)
+info.BackgroundTransparency = 1
+info.Text = "Words may be wrong or not accepted by the game\n479k+ words • Optimized search"
+info.TextColor3 = Color3.fromRGB(255, 100, 100)
+info.Font = Enum.Font.Gotham
+info.TextSize = 10
+info.TextXAlignment = Enum.TextXAlignment.Center
+info.TextWrapped = true
+
+local h = Instance.new("TextBox", b)
+h.PlaceholderText = "Type letters..."
+h.Size = UDim2.new(1, -20, 0, 30)
+h.Position = UDim2.new(0, 10, 0, 75)
+h.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+h.TextColor3 = Color3.fromRGB(255, 255, 255)
+h.Text = ""
+h.ClearTextOnFocus = false
+h.Font = Enum.Font.Gotham
+h.TextSize = 14
+h.TextXAlignment = Enum.TextXAlignment.Center
+Instance.new("UICorner", h).CornerRadius = UDim.new(0, 6)
+
+local list = Instance.new("ScrollingFrame", b)
+list.Size = UDim2.new(1, -20, 0, 185)
+list.Position = UDim2.new(0, 10, 0, 110)
+list.BackgroundTransparency = 1
+list.ScrollBarThickness = 6
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local uiList = Instance.new("UIListLayout", list)
+uiList.Padding = UDim.new(0, 2)
+uiList.SortOrder = Enum.SortOrder.LayoutOrder
+
+local function ClearSuggestions()
+    for _, child in ipairs(list:GetChildren()) do
+        if child:IsA("TextButton") or child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+end
+
+local lastUpdate = 0
+local updateDelay = 0.3
+
+local function UpdateSuggestions()
+    local now = tick()
+    if now - lastUpdate < updateDelay then return end
+    lastUpdate = now
+    
+    ClearSuggestions()
+
+    local text = h.Text
+    if #text < 1 then return end
+
+    spawn(function()
+        local suggests = SuggestWords(text, 50)
+        
+        if #suggests == 0 then
+            local message = Instance.new("TextLabel", list)
+            message.Size = UDim2.new(1, 0, 0, 22)
+            message.BackgroundTransparency = 1
+            message.Text = "No words found for: '" .. text .. "'"
+            message.TextColor3 = Color3.fromRGB(255, 100, 100)
+            message.Font = Enum.Font.Gotham
+            message.TextSize = 12
+            message.TextXAlignment = Enum.TextXAlignment.Center
+        else
+            for _, word in ipairs(suggests) do
+                local btn = Instance.new("TextButton", list)
+                btn.Size = UDim2.new(1, 0, 0, 22)
+                btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                btn.Font = Enum.Font.Gotham
+                btn.TextSize = 12
+                btn.Text = word
+                btn.AutoButtonColor = true
+                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+                btn.Selectable = false
+                
+                btn.MouseButton1Click:Connect(function()
+                    h.Text = word
+                end)
+            end
+        end
+    end)
+end
+
+local typingTimer = 0
+h:GetPropertyChangedSignal("Text"):Connect(function()
+    typingTimer = tick()
+    wait(0.1)
+    
+    if #h.Text == 0 then
+        ClearSuggestions()
+        return
+    end
+    
+    if tick() - typingTimer >= 0.09 then
+        UpdateSuggestions()
+    end
+end)
+
+local status = Instance.new("TextLabel", b)
+status.Size = UDim2.new(1, -10, 0, 15)
+status.Position = UDim2.new(0,5,1,-20)
+status.BackgroundTransparency = 1
+status.Text = "Loading words..."
+status.TextColor3 = Color3.fromRGB(100, 255, 100)
+status.Font = Enum.Font.Gotham
+status.TextSize = 10
+status.TextXAlignment = Enum.TextXAlignment.Center
+
+spawn(function()
+    while not loaded do
+        wait(0.1)
+    end
+    status.Text = "Ready! " .. #Words .. " words loaded"
+    wait(3)
+    status.Visible = false
+end)
