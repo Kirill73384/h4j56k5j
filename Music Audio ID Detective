@@ -1,0 +1,1086 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local AUTO_UPDATE_ENABLED = true
+local UPDATE_INTERVAL = 10
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MusicHunterGUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 500, 0, 450)
+mainFrame.Position = UDim2.new(0, 50, 0, 50)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+mainFrame.BorderSizePixel = 0
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+header.BorderSizePixel = 0
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0.7, 0, 1, 0)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "🎵 Music Detective"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 16
+title.Font = Enum.Font.GothamSemibold
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 40, 0, 40)
+closeBtn.Position = UDim2.new(1, -40, 0, 0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.TextSize = 24
+closeBtn.Font = Enum.Font.GothamBold
+
+local logsBtn = Instance.new("TextButton")
+logsBtn.Size = UDim2.new(0, 80, 0, 25)
+logsBtn.Position = UDim2.new(1, -130, 0.5, -12)
+logsBtn.BackgroundColor3 = Color3.fromRGB(80, 60, 120)
+logsBtn.Text = "📜 Logs"
+logsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+logsBtn.TextSize = 12
+logsBtn.Font = Enum.Font.GothamSemibold
+
+local logsBtnCorner = Instance.new("UICorner")
+logsBtnCorner.CornerRadius = UDim.new(0, 6)
+logsBtnCorner.Parent = logsBtn
+
+local statusBar = Instance.new("Frame")
+statusBar.Size = UDim2.new(1, 0, 0, 30)
+statusBar.Position = UDim2.new(0, 0, 0, 40)
+statusBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+statusBar.BorderSizePixel = 0
+
+local statusText = Instance.new("TextLabel")
+statusText.Size = UDim2.new(1, -20, 1, 0)
+statusText.Position = UDim2.new(0, 10, 0, 0)
+statusText.BackgroundTransparency = 1
+statusText.Text = "🔍 Tracking music..."
+statusText.TextColor3 = Color3.fromRGB(200, 200, 100)
+statusText.TextSize = 12
+statusText.Font = Enum.Font.Gotham
+statusText.TextXAlignment = Enum.TextXAlignment.Left
+
+local content = Instance.new("ScrollingFrame")
+content.Size = UDim2.new(1, -20, 1, -110)
+content.Position = UDim2.new(0, 10, 0, 70)
+content.BackgroundTransparency = 1
+content.BorderSizePixel = 0
+content.ScrollBarThickness = 6
+content.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 110)
+content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local musicListLayout = Instance.new("UIListLayout")
+musicListLayout.Padding = UDim.new(0, 8)
+musicListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+musicListLayout.Parent = content
+
+local controlPanel = Instance.new("Frame")
+controlPanel.Size = UDim2.new(1, 0, 0, 40)
+controlPanel.Position = UDim2.new(0, 0, 1, -40)
+controlPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+controlPanel.BorderSizePixel = 0
+
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Size = UDim2.new(0, 140, 0, 30)
+refreshBtn.Position = UDim2.new(0.5, -70, 0.5, -15)
+refreshBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+refreshBtn.Text = "🔄 Track Again"
+refreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+refreshBtn.TextSize = 12
+refreshBtn.Font = Enum.Font.GothamSemibold
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 8)
+btnCorner.Parent = refreshBtn
+
+local settingsBtn = Instance.new("TextButton")
+settingsBtn.Size = UDim2.new(0, 100, 0, 25)
+settingsBtn.Position = UDim2.new(0, 10, 0.5, -12)
+settingsBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
+settingsBtn.Text = "⚙️ Settings"
+settingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsBtn.TextSize = 12
+settingsBtn.Font = Enum.Font.GothamSemibold
+
+local settingsBtnCorner = Instance.new("UICorner")
+settingsBtnCorner.CornerRadius = UDim.new(0, 6)
+settingsBtnCorner.Parent = settingsBtn
+
+local hintLabel = Instance.new("TextLabel")
+hintLabel.Size = UDim2.new(1, -20, 0, 30)
+hintLabel.Position = UDim2.new(0, 10, 1, -75)
+hintLabel.BackgroundTransparency = 1
+hintLabel.Text = "💡 If you see a website instead of ID - this track is protected"
+hintLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
+hintLabel.TextSize = 10
+hintLabel.Font = Enum.Font.Gotham
+hintLabel.TextXAlignment = Enum.TextXAlignment.Left
+hintLabel.TextWrapped = true
+
+header.Parent = mainFrame
+title.Parent = header
+closeBtn.Parent = header
+logsBtn.Parent = header
+statusBar.Parent = mainFrame
+statusText.Parent = statusBar
+content.Parent = mainFrame
+controlPanel.Parent = mainFrame
+refreshBtn.Parent = controlPanel
+settingsBtn.Parent = controlPanel
+hintLabel.Parent = mainFrame
+mainFrame.Parent = screenGui
+screenGui.Parent = playerGui
+
+local previewSound = nil
+local currentlyPreviewing = nil
+local previewConnection = nil
+local currentPreviewButton = nil
+local previewData = nil
+
+local musicNameCache = {}
+local foundSoundsCache = {}
+
+local function getMusicNameFromMarketplace(assetId)
+    if musicNameCache[assetId] then
+        return musicNameCache[assetId]
+    end
+    
+    if not tonumber(assetId) then
+        musicNameCache[assetId] = "Protected Audio"
+        return "Protected Audio"
+    end
+    
+    local success, result = pcall(function()
+        return MarketplaceService:GetProductInfo(assetId)
+    end)
+    
+    if success and result then
+        musicNameCache[assetId] = result.Name
+        return result.Name
+    else
+        musicNameCache[assetId] = "Unknown Music"
+        return "Unknown Music"
+    end
+end
+
+local function stopPreview()
+    if previewSound then
+        pcall(function()
+            previewSound:Stop()
+            previewSound:Destroy()
+        end)
+        previewSound = nil
+    end
+    if previewConnection then
+        previewConnection:Disconnect()
+        previewConnection = nil
+    end
+    
+    if currentPreviewButton then
+        currentPreviewButton.Text = "🎧 Preview"
+        currentPreviewButton.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+        currentPreviewButton = nil
+    end
+    
+    currentlyPreviewing = nil
+    previewData = nil
+end
+
+local function playPreview(soundData, previewBtn)
+    stopPreview()
+    
+    if soundData.IsUnavailable then
+        return
+    end
+    
+    local success, sound = pcall(function()
+        local newSound = Instance.new("Sound")
+        newSound.SoundId = "rbxassetid://" .. soundData.AssetId
+        newSound.Volume = 0.5
+        newSound.Looped = false
+        newSound.Parent = SoundService
+        newSound:Play()
+        return newSound
+    end)
+    
+    if not success or not sound then
+        return nil
+    end
+    
+    previewSound = sound
+    currentlyPreviewing = soundData.AssetId
+    currentPreviewButton = previewBtn
+    previewData = soundData
+    
+    previewBtn.Text = "⏹️ Stop"
+    previewBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+    
+    previewConnection = previewSound.Ended:Connect(function()
+        stopPreview()
+    end)
+    
+    return previewSound
+end
+
+local function copyToClipboard(text)
+    pcall(function()
+        setclipboard(tostring(text))
+    end)
+end
+
+local musicLogs = {}
+local logsGui = nil
+local settingsGui = nil
+
+local function extractSoundInfo(soundId)
+    if not soundId or soundId == "" then
+        return "Unknown", "Unknown", true
+    end
+    
+    if string.find(soundId, "rbxassetid://") then
+        local id = string.gsub(soundId, "rbxassetid://", "")
+        if tonumber(id) then
+            return id, "Roblox Asset", false
+        else
+            return id, "Invalid ID", true
+        end
+    elseif string.find(soundId, "http") then
+        local numbers = {}
+        for number in string.gmatch(soundId, "%d+") do
+            table.insert(numbers, number)
+        end
+        
+        if #numbers > 0 then
+            local lastNumber = numbers[#numbers]
+            if tonumber(lastNumber) then
+                return lastNumber, "Audio URL", false
+            else
+                return lastNumber, "Invalid Audio", true
+            end
+        else
+            local domain = string.match(soundId, "https?://([^/]+)") or "Unknown Site"
+            return domain, "Protected Audio", true
+        end
+    else
+        if tonumber(soundId) then
+            return soundId, "Raw ID", false
+        else
+            return soundId, "Invalid ID", true
+        end
+    end
+end
+
+local function createSoundElement(soundData, index)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 80)
+    frame.BackgroundColor3 = soundData.IsUnavailable and Color3.fromRGB(45, 30, 30) or Color3.fromRGB(30, 30, 45)
+    frame.BorderSizePixel = 0
+    frame.LayoutOrder = index
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.PaddingTop = UDim.new(0, 8)
+    padding.PaddingBottom = UDim.new(0, 8)
+    padding.Parent = frame
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(0.7, 0, 0, 20)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = "🎼 " .. soundData.RealName
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextSize = 12
+    nameLabel.Font = Enum.Font.Gotham
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    
+    local idLabel = Instance.new("TextLabel")
+    idLabel.Size = UDim2.new(0.7, 0, 0, 20)
+    idLabel.Position = UDim2.new(0, 0, 0, 25)
+    idLabel.BackgroundTransparency = 1
+    idLabel.Text = "🎯 " .. soundData.AssetId
+    idLabel.TextColor3 = soundData.IsUnavailable and Color3.fromRGB(255, 150, 100) or Color3.fromRGB(100, 200, 255)
+    idLabel.TextSize = 12
+    idLabel.Font = Enum.Font.GothamSemibold
+    idLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local locationLabel = Instance.new("TextLabel")
+    locationLabel.Size = UDim2.new(0.7, 0, 0, 15)
+    locationLabel.Position = UDim2.new(0, 0, 0, 50)
+    locationLabel.BackgroundTransparency = 1
+    locationLabel.Text = "📍 " .. soundData.Location
+    locationLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    locationLabel.TextSize = 10
+    locationLabel.Font = Enum.Font.Gotham
+    locationLabel.TextXAlignment = Enum.TextXAlignment.Left
+    locationLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    
+    local copyBtn = Instance.new("TextButton")
+    copyBtn.Size = UDim2.new(0, 80, 0, 25)
+    copyBtn.Position = UDim2.new(1, -85, 0, 8)
+    copyBtn.BackgroundColor3 = soundData.IsUnavailable and Color3.fromRGB(120, 80, 80) or Color3.fromRGB(60, 120, 200)
+    copyBtn.Text = soundData.IsUnavailable and "🛡️ Info" or "📋 Copy"
+    copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    copyBtn.TextSize = 11
+    copyBtn.Font = Enum.Font.GothamSemibold
+    
+    local copyBtnCorner = Instance.new("UICorner")
+    copyBtnCorner.CornerRadius = UDim.new(0, 6)
+    copyBtnCorner.Parent = copyBtn
+    
+    local previewBtn = Instance.new("TextButton")
+    previewBtn.Name = "PreviewButton"
+    previewBtn.Size = UDim2.new(0, 80, 0, 25)
+    previewBtn.Position = UDim2.new(1, -85, 0, 40)
+    previewBtn.BackgroundColor3 = soundData.IsUnavailable and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(80, 160, 80)
+    
+    if soundData.IsUnavailable then
+        previewBtn.Text = "🚫 No Preview"
+    elseif currentlyPreviewing == soundData.AssetId then
+        previewBtn.Text = "⏹️ Stop"
+        previewBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+    else
+        previewBtn.Text = "🎧 Preview"
+    end
+    
+    previewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    previewBtn.TextSize = 11
+    previewBtn.Font = Enum.Font.GothamSemibold
+    previewBtn.AutoButtonColor = not soundData.IsUnavailable
+    
+    local previewBtnCorner = Instance.new("UICorner")
+    previewBtnCorner.CornerRadius = UDim.new(0, 6)
+    previewBtnCorner.Parent = previewBtn
+    
+    nameLabel.Parent = frame
+    idLabel.Parent = frame
+    locationLabel.Parent = frame
+    copyBtn.Parent = frame
+    previewBtn.Parent = frame
+    
+    copyBtn.MouseButton1Click:Connect(function()
+        if not soundData.IsUnavailable then
+            copyToClipboard(soundData.AssetId)
+            copyBtn.Text = "✅ Copied!"
+            copyBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+            wait(1)
+            copyBtn.Text = "📋 Copy"
+            copyBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        end
+    end)
+    
+    previewBtn.MouseButton1Click:Connect(function()
+        if soundData.IsUnavailable then
+            return
+        end
+        
+        if currentlyPreviewing == soundData.AssetId then
+            stopPreview()
+        else
+            local sound = playPreview(soundData, previewBtn)
+            if not sound then
+                previewBtn.Text = "❌ Error"
+                previewBtn.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
+                wait(1)
+                previewBtn.Text = "🎧 Preview"
+                previewBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+            end
+        end
+    end)
+    
+    return frame
+end
+
+local function addToLogs(soundData)
+    if soundData.IsUnavailable then
+        return
+    end
+    
+    for _, log in ipairs(musicLogs) do
+        if log.AssetId == soundData.AssetId then
+            return
+        end
+    end
+    
+    table.insert(musicLogs, {
+        Name = soundData.Name,
+        RealName = soundData.RealName,
+        AssetId = soundData.AssetId,
+        Location = soundData.Location,
+        TimeAdded = os.time()
+    })
+end
+
+local lastUpdate = 0
+local isUpdating = false
+
+local function updateMusicInfo()
+    if isUpdating then return end
+    isUpdating = true
+    
+    statusText.Text = "🔍 Scanning all audio sources..."
+    statusText.TextColor3 = Color3.fromRGB(200, 200, 100)
+    
+    for _, child in ipairs(content:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+    
+    local foundSounds = {}
+    local foundIds = {}
+    
+    local function checkSound(sound, location)
+        if sound:IsA("Sound") and sound.SoundId ~= "" then
+            local assetId, sourceType, isUnavailable = extractSoundInfo(sound.SoundId)
+            
+            local soundKey = assetId .. "_" .. tostring(sound) .. "_" .. location
+            if not foundIds[soundKey] then
+                foundIds[soundKey] = true
+                
+                local realName = getMusicNameFromMarketplace(assetId)
+                
+                local soundData = {
+                    Sound = sound,
+                    Name = sound.Name,
+                    RealName = realName,
+                    Location = location,
+                    AssetId = assetId,
+                    SourceType = sourceType,
+                    IsUnavailable = isUnavailable,
+                    Volume = sound.Volume,
+                    TimePosition = sound.TimePosition,
+                    TimeLength = sound.TimeLength,
+                    Pitch = sound.Pitch,
+                    Playing = sound.Playing
+                }
+                
+                table.insert(foundSounds, soundData)
+                addToLogs(soundData)
+            end
+        end
+    end
+    
+    local placesToScan = {
+        {place = SoundService, prefix = "SoundService"},
+        {place = workspace, prefix = "World"},
+        {place = game:GetService("Lighting"), prefix = "Lighting"},
+        {place = game:GetService("StarterGui"), prefix = "StarterGui"},
+        {place = game:GetService("StarterPlayer"), prefix = "StarterPlayer"}
+    }
+    
+    for _, scanInfo in ipairs(placesToScan) do
+        pcall(function()
+            for _, sound in ipairs(scanInfo.place:GetDescendants()) do
+                pcall(function()
+                    if sound:IsA("Sound") then
+                        checkSound(sound, scanInfo.prefix .. ": " .. tostring(sound.Parent.Name))
+                    end
+                end)
+            end
+        end)
+    end
+    
+    foundSoundsCache = foundSounds
+    
+    if #foundSounds == 0 then
+        local noSound = Instance.new("TextLabel")
+        noSound.Size = UDim2.new(1, 0, 0, 80)
+        noSound.BackgroundTransparency = 1
+        noSound.Text = "🎵 No audio sources found...\n\nTry joining a game with background music!"
+        noSound.TextColor3 = Color3.fromRGB(150, 150, 150)
+        noSound.TextSize = 14
+        noSound.Font = Enum.Font.Gotham
+        noSound.TextWrapped = true
+        noSound.Parent = content
+        
+        statusText.Text = "🌌 No Audio Sources Found"
+        statusText.TextColor3 = Color3.fromRGB(255, 100, 100)
+    else
+        statusText.Text = "🎯 Found: " .. #foundSounds .. " audio sources"
+        statusText.TextColor3 = Color3.fromRGB(100, 255, 100)
+        
+        for i, soundData in ipairs(foundSounds) do
+            local soundElement = createSoundElement(soundData, i)
+            soundElement.Parent = content
+            
+            if previewData and soundData.AssetId == previewData.AssetId then
+                local previewBtn = soundElement:FindFirstChild("PreviewButton")
+                if previewBtn then
+                    previewBtn.Text = "⏹️ Stop"
+                    previewBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+                    currentPreviewButton = previewBtn
+                end
+            end
+        end
+    end
+    
+    lastUpdate = tick()
+    isUpdating = false
+end
+
+local function createSettingsGUI()
+    if settingsGui then
+        settingsGui:Destroy()
+        settingsGui = nil
+        return
+    end
+    
+    settingsGui = Instance.new("ScreenGui")
+    settingsGui.Name = "SettingsGUI"
+    settingsGui.ResetOnSpawn = false
+    settingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local settingsFrame = Instance.new("Frame")
+    settingsFrame.Size = UDim2.new(0, 350, 0, 200)
+    settingsFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+    settingsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+    settingsFrame.BorderSizePixel = 0
+    
+    local settingsCorner = Instance.new("UICorner")
+    settingsCorner.CornerRadius = UDim.new(0, 12)
+    settingsCorner.Parent = settingsFrame
+    
+    local settingsHeader = Instance.new("Frame")
+    settingsHeader.Size = UDim2.new(1, 0, 0, 40)
+    settingsHeader.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    settingsHeader.BorderSizePixel = 0
+    
+    local settingsHeaderCorner = Instance.new("UICorner")
+    settingsHeaderCorner.CornerRadius = UDim.new(0, 12)
+    settingsHeaderCorner.Parent = settingsHeader
+    
+    local settingsTitle = Instance.new("TextLabel")
+    settingsTitle.Size = UDim2.new(0.7, 0, 1, 0)
+    settingsTitle.Position = UDim2.new(0, 15, 0, 0)
+    settingsTitle.BackgroundTransparency = 1
+    settingsTitle.Text = "⚙️ Settings"
+    settingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    settingsTitle.TextSize = 16
+    settingsTitle.Font = Enum.Font.GothamSemibold
+    settingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local settingsCloseBtn = Instance.new("TextButton")
+    settingsCloseBtn.Size = UDim2.new(0, 40, 0, 40)
+    settingsCloseBtn.Position = UDim2.new(1, -40, 0, 0)
+    settingsCloseBtn.BackgroundTransparency = 1
+    settingsCloseBtn.Text = "×"
+    settingsCloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    settingsCloseBtn.TextSize = 24
+    settingsCloseBtn.Font = Enum.Font.GothamBold
+    
+    local autoUpdateLabel = Instance.new("TextLabel")
+    autoUpdateLabel.Size = UDim2.new(1, -20, 0, 30)
+    autoUpdateLabel.Position = UDim2.new(0, 10, 0, 50)
+    autoUpdateLabel.BackgroundTransparency = 1
+    autoUpdateLabel.Text = "Auto Update:"
+    autoUpdateLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    autoUpdateLabel.TextSize = 14
+    autoUpdateLabel.Font = Enum.Font.GothamSemibold
+    autoUpdateLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local autoUpdateToggle = Instance.new("TextButton")
+    autoUpdateToggle.Size = UDim2.new(0, 60, 0, 25)
+    autoUpdateToggle.Position = UDim2.new(1, -70, 0, 50)
+    autoUpdateToggle.BackgroundColor3 = AUTO_UPDATE_ENABLED and Color3.fromRGB(80, 160, 80) or Color3.fromRGB(120, 120, 120)
+    autoUpdateToggle.Text = AUTO_UPDATE_ENABLED and "ON" or "OFF"
+    autoUpdateToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    autoUpdateToggle.TextSize = 12
+    autoUpdateToggle.Font = Enum.Font.GothamSemibold
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 6)
+    toggleCorner.Parent = autoUpdateToggle
+    
+    local intervalLabel = Instance.new("TextLabel")
+    intervalLabel.Size = UDim2.new(1, -20, 0, 30)
+    intervalLabel.Position = UDim2.new(0, 10, 0, 90)
+    intervalLabel.BackgroundTransparency = 1
+    intervalLabel.Text = "Update Interval: " .. UPDATE_INTERVAL .. " seconds"
+    intervalLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    intervalLabel.TextSize = 14
+    intervalLabel.Font = Enum.Font.GothamSemibold
+    intervalLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local intervalSlider = Instance.new("Frame")
+    intervalSlider.Size = UDim2.new(1, -20, 0, 20)
+    intervalSlider.Position = UDim2.new(0, 10, 0, 120)
+    intervalSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    intervalSlider.BorderSizePixel = 0
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 4)
+    sliderCorner.Parent = intervalSlider
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new((UPDATE_INTERVAL - 5) / 55, 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+    sliderFill.BorderSizePixel = 0
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 4)
+    fillCorner.Parent = sliderFill
+    
+    local minLabel = Instance.new("TextLabel")
+    minLabel.Size = UDim2.new(0, 30, 0, 15)
+    minLabel.Position = UDim2.new(0, 10, 1, 5)
+    minLabel.BackgroundTransparency = 1
+    minLabel.Text = "5s"
+    minLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    minLabel.TextSize = 10
+    minLabel.Font = Enum.Font.Gotham
+    
+    local maxLabel = Instance.new("TextLabel")
+    maxLabel.Size = UDim2.new(0, 30, 0, 15)
+    maxLabel.Position = UDim2.new(1, -30, 1, 5)
+    maxLabel.BackgroundTransparency = 1
+    maxLabel.Text = "60s"
+    maxLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    maxLabel.TextSize = 10
+    maxLabel.Font = Enum.Font.Gotham
+    
+    settingsHeader.Parent = settingsFrame
+    settingsTitle.Parent = settingsHeader
+    settingsCloseBtn.Parent = settingsHeader
+    autoUpdateLabel.Parent = settingsFrame
+    autoUpdateToggle.Parent = settingsFrame
+    intervalLabel.Parent = settingsFrame
+    intervalSlider.Parent = settingsFrame
+    sliderFill.Parent = intervalSlider
+    minLabel.Parent = settingsFrame
+    maxLabel.Parent = settingsFrame
+    settingsFrame.Parent = settingsGui
+    settingsGui.Parent = playerGui
+    
+    autoUpdateToggle.MouseButton1Click:Connect(function()
+        AUTO_UPDATE_ENABLED = not AUTO_UPDATE_ENABLED
+        autoUpdateToggle.Text = AUTO_UPDATE_ENABLED and "ON" or "OFF"
+        autoUpdateToggle.BackgroundColor3 = AUTO_UPDATE_ENABLED and Color3.fromRGB(80, 160, 80) or Color3.fromRGB(120, 120, 120)
+    end)
+    
+    settingsCloseBtn.MouseButton1Click:Connect(function()
+        settingsGui:Destroy()
+        settingsGui = nil
+    end)
+    
+    local sliderDragging = false
+    
+    intervalSlider.InputBegan:Connect(function()
+        sliderDragging = true
+    end)
+    
+    intervalSlider.InputEnded:Connect(function()
+        sliderDragging = false
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if sliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = input.Position.X
+            local sliderPos = intervalSlider.AbsolutePosition.X
+            local sliderSize = intervalSlider.AbsoluteSize.X
+            
+            local relativePos = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
+            local newInterval = math.floor(5 + relativePos * 55)
+            
+            UPDATE_INTERVAL = newInterval
+            intervalLabel.Text = "Update Interval: " .. UPDATE_INTERVAL .. " seconds"
+            sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
+        end
+    end)
+end
+
+local function createLogsGUI()
+    if logsGui then
+        logsGui:Destroy()
+        logsGui = nil
+        return
+    end
+    
+    logsGui = Instance.new("ScreenGui")
+    logsGui.Name = "MusicLogsGUI"
+    logsGui.ResetOnSpawn = false
+    logsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local logsFrame = Instance.new("Frame")
+    logsFrame.Size = UDim2.new(0, 500, 0, 500)
+    logsFrame.Position = UDim2.new(0.5, -250, 0.5, -250)
+    logsFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    logsFrame.BorderSizePixel = 0
+    
+    local logsCorner = Instance.new("UICorner")
+    logsCorner.CornerRadius = UDim.new(0, 12)
+    logsCorner.Parent = logsFrame
+    
+    local logsHeader = Instance.new("Frame")
+    logsHeader.Size = UDim2.new(1, 0, 0, 40)
+    logsHeader.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    logsHeader.BorderSizePixel = 0
+    
+    local logsHeaderCorner = Instance.new("UICorner")
+    logsHeaderCorner.CornerRadius = UDim.new(0, 12)
+    logsHeaderCorner.Parent = logsHeader
+    
+    local logsTitle = Instance.new("TextLabel")
+    logsTitle.Size = UDim2.new(0.7, 0, 1, 0)
+    logsTitle.Position = UDim2.new(0, 15, 0, 0)
+    logsTitle.BackgroundTransparency = 1
+    logsTitle.Text = "📜 Music Archive"
+    logsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    logsTitle.TextSize = 16
+    logsTitle.Font = Enum.Font.GothamSemibold
+    logsTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local logsCloseBtn = Instance.new("TextButton")
+    logsCloseBtn.Size = UDim2.new(0, 40, 0, 40)
+    logsCloseBtn.Position = UDim2.new(1, -40, 0, 0)
+    logsCloseBtn.BackgroundTransparency = 1
+    logsCloseBtn.Text = "×"
+    logsCloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    logsCloseBtn.TextSize = 24
+    logsCloseBtn.Font = Enum.Font.GothamBold
+    
+    local clearLogsBtn = Instance.new("TextButton")
+    clearLogsBtn.Size = UDim2.new(0, 100, 0, 25)
+    clearLogsBtn.Position = UDim2.new(1, -150, 0.5, -12)
+    clearLogsBtn.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
+    clearLogsBtn.Text = "🗑️ Clear"
+    clearLogsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clearLogsBtn.TextSize = 12
+    clearLogsBtn.Font = Enum.Font.GothamSemibold
+    
+    local clearBtnCorner = Instance.new("UICorner")
+    clearBtnCorner.CornerRadius = UDim.new(0, 6)
+    clearBtnCorner.Parent = clearLogsBtn
+    
+    local logsStats = Instance.new("TextLabel")
+    logsStats.Size = UDim2.new(1, -20, 0, 30)
+    logsStats.Position = UDim2.new(0, 10, 0, 45)
+    logsStats.BackgroundTransparency = 1
+    logsStats.Text = "Total unique tracks: " .. #musicLogs
+    logsStats.TextColor3 = Color3.fromRGB(150, 200, 255)
+    logsStats.TextSize = 14
+    logsStats.Font = Enum.Font.GothamSemibold
+    logsStats.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local logsContent = Instance.new("ScrollingFrame")
+    logsContent.Size = UDim2.new(1, -20, 1, -120)
+    logsContent.Position = UDim2.new(0, 10, 0, 80)
+    logsContent.BackgroundTransparency = 1
+    logsContent.BorderSizePixel = 0
+    logsContent.ScrollBarThickness = 6
+    logsContent.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 110)
+    logsContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    
+    local logsListLayout = Instance.new("UIListLayout")
+    logsListLayout.Padding = UDim.new(0, 6)
+    logsListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    logsListLayout.Parent = logsContent
+    
+    logsHeader.Parent = logsFrame
+    logsTitle.Parent = logsHeader
+    logsCloseBtn.Parent = logsHeader
+    clearLogsBtn.Parent = logsHeader
+    logsStats.Parent = logsFrame
+    logsContent.Parent = logsFrame
+    logsFrame.Parent = logsGui
+    logsGui.Parent = playerGui
+    
+    for _, child in ipairs(logsContent:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+    
+    if #musicLogs == 0 then
+        local emptyLogs = Instance.new("TextLabel")
+        emptyLogs.Size = UDim2.new(1, 0, 0, 100)
+        emptyLogs.BackgroundTransparency = 1
+        emptyLogs.Text = "📝 No tracks in archive yet\n\nFound music will appear here automatically"
+        emptyLogs.TextColor3 = Color3.fromRGB(150, 150, 150)
+        emptyLogs.TextSize = 14
+        emptyLogs.Font = Enum.Font.Gotham
+        emptyLogs.TextWrapped = true
+        emptyLogs.Parent = logsContent
+    else
+        for i, logData in ipairs(musicLogs) do
+            local logElement = Instance.new("Frame")
+            logElement.Size = UDim2.new(1, 0, 0, 80)
+            logElement.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+            logElement.BorderSizePixel = 0
+            logElement.LayoutOrder = i
+            
+            local logCorner = Instance.new("UICorner")
+            logCorner.CornerRadius = UDim.new(0, 8)
+            logCorner.Parent = logElement
+            
+            local logPadding = Instance.new("UIPadding")
+            logPadding.PaddingLeft = UDim.new(0, 10)
+            logPadding.PaddingRight = UDim.new(0, 10)
+            logPadding.PaddingTop = UDim.new(0, 8)
+            logPadding.PaddingBottom = UDim.new(0, 8)
+            logPadding.Parent = logElement
+            
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(0.7, 0, 0, 20)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Text = "🎼 " .. logData.RealName
+            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nameLabel.TextSize = 12
+            nameLabel.Font = Enum.Font.Gotham
+            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            
+            local idLabel = Instance.new("TextLabel")
+            idLabel.Size = UDim2.new(0.7, 0, 0, 20)
+            idLabel.Position = UDim2.new(0, 0, 0, 25)
+            idLabel.BackgroundTransparency = 1
+            idLabel.Text = "🎯 " .. logData.AssetId
+            idLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+            idLabel.TextSize = 12
+            idLabel.Font = Enum.Font.GothamSemibold
+            idLabel.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local locationLabel = Instance.new("TextLabel")
+            locationLabel.Size = UDim2.new(0.7, 0, 0, 15)
+            locationLabel.Position = UDim2.new(0, 0, 0, 50)
+            locationLabel.BackgroundTransparency = 1
+            locationLabel.Text = "📍 " .. logData.Location
+            locationLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+            locationLabel.TextSize = 10
+            locationLabel.Font = Enum.Font.Gotham
+            locationLabel.TextXAlignment = Enum.TextXAlignment.Left
+            locationLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            
+            local copyBtn = Instance.new("TextButton")
+            copyBtn.Size = UDim2.new(0, 80, 0, 25)
+            copyBtn.Position = UDim2.new(1, -85, 0, 8)
+            copyBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+            copyBtn.Text = "📋 Copy"
+            copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            copyBtn.TextSize = 11
+            copyBtn.Font = Enum.Font.GothamSemibold
+            
+            local copyBtnCorner = Instance.new("UICorner")
+            copyBtnCorner.CornerRadius = UDim.new(0, 6)
+            copyBtnCorner.Parent = copyBtn
+            
+            local previewBtn = Instance.new("TextButton")
+            previewBtn.Name = "PreviewButton"
+            previewBtn.Size = UDim2.new(0, 80, 0, 25)
+            previewBtn.Position = UDim2.new(1, -85, 0, 40)
+            previewBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+            
+            if currentlyPreviewing == logData.AssetId then
+                previewBtn.Text = "⏹️ Stop"
+                previewBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+            else
+                previewBtn.Text = "🎧 Preview"
+            end
+            
+            previewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            previewBtn.TextSize = 11
+            previewBtn.Font = Enum.Font.GothamSemibold
+            
+            local previewBtnCorner = Instance.new("UICorner")
+            previewBtnCorner.CornerRadius = UDim.new(0, 6)
+            previewBtnCorner.Parent = previewBtn
+            
+            nameLabel.Parent = logElement
+            idLabel.Parent = logElement
+            locationLabel.Parent = logElement
+            copyBtn.Parent = logElement
+            previewBtn.Parent = logElement
+            logElement.Parent = logsContent
+            
+            copyBtn.MouseButton1Click:Connect(function()
+                copyToClipboard(logData.AssetId)
+                copyBtn.Text = "✅ Copied!"
+                copyBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+                wait(1)
+                copyBtn.Text = "📋 Copy"
+                copyBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+            end)
+            
+            previewBtn.MouseButton1Click:Connect(function()
+                if currentlyPreviewing == logData.AssetId then
+                    stopPreview()
+                else
+                    local sound = playPreview(logData, previewBtn)
+                    if not sound then
+                        previewBtn.Text = "❌ Error"
+                        previewBtn.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
+                        wait(1)
+                        previewBtn.Text = "🎧 Preview"
+                        previewBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+                    end
+                end
+            end)
+        end
+    end
+    
+    logsCloseBtn.MouseButton1Click:Connect(function()
+        logsGui:Destroy()
+        logsGui = nil
+    end)
+    
+    clearLogsBtn.MouseButton1Click:Connect(function()
+        musicLogs = {}
+        logsGui:Destroy()
+        logsGui = nil
+        createLogsGUI()
+    end)
+    
+    local logsDragging = false
+    local logsDragStart = Vector2.new(0, 0)
+    local logsStartPos = UDim2.new(0, 0, 0, 0)
+    
+    logsHeader.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            logsDragging = true
+            logsDragStart = input.Position
+            logsStartPos = logsFrame.Position
+        end
+    end)
+    
+    logsHeader.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            logsDragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if logsDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - logsDragStart
+            logsFrame.Position = UDim2.new(
+                logsStartPos.X.Scale, 
+                logsStartPos.X.Offset + delta.X,
+                logsStartPos.Y.Scale, 
+                logsStartPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+local function checkForUpdate()
+    if not AUTO_UPDATE_ENABLED then
+        refreshBtn.Text = "🎯 Scan Now!"
+        return
+    end
+    
+    local currentTime = tick()
+    local timeSinceLastUpdate = currentTime - lastUpdate
+    
+    if timeSinceLastUpdate >= UPDATE_INTERVAL then
+        updateMusicInfo()
+    else
+        local timeLeft = math.floor(UPDATE_INTERVAL - timeSinceLastUpdate)
+        if timeLeft > 0 then
+            refreshBtn.Text = string.format("🔄 In %dsec", timeLeft)
+        else
+            refreshBtn.Text = "🎯 Scan Now!"
+        end
+    end
+end
+
+local dragging = false
+local dragStart = Vector2.new(0, 0)
+local startPos = UDim2.new(0, 0, 0, 0)
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+header.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    stopPreview()
+    screenGui:Destroy()
+end)
+
+logsBtn.MouseButton1Click:Connect(function()
+    createLogsGUI()
+end)
+
+settingsBtn.MouseButton1Click:Connect(function()
+    createSettingsGUI()
+end)
+
+refreshBtn.MouseButton1Click:Connect(function()
+    if not isUpdating then
+        updateMusicInfo()
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.F3 then
+        mainFrame.Visible = not mainFrame.Visible
+        if mainFrame.Visible then
+            updateMusicInfo()
+        else
+            stopPreview()
+        end
+    end
+end)
+
+game:GetService("CoreGui").ChildRemoved:Connect(function(child)
+    if child == screenGui then
+        stopPreview()
+    end
+end)
+
+updateMusicInfo()
+
+spawn(function()
+    while true do
+        checkForUpdate()
+        wait(1)
+    end
+end)
