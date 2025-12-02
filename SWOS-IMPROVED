@@ -1,0 +1,446 @@
+local url = "https://raw.githubusercontent.com/dwyl/english-words/refs/heads/master/words.txt"
+
+local Words = {}
+local loaded = false
+local WordDictionary = {}
+local searchCache = {}
+local minCharacters = 1
+local maxCharacters = 100
+local currentPage = 1
+local wordsPerPage = 50
+
+local function LoadWords()
+    if loaded then return end
+    
+    local success, result = pcall(function()
+        local res = request({Url = url, Method = "GET"})
+        if res and res.Body then
+            for w in res.Body:gmatch("[^\r\n]+") do
+                local wordLower = w:lower()
+                table.insert(Words, wordLower)
+                local firstLetter = wordLower:sub(1,1)
+                if not WordDictionary[firstLetter] then
+                    WordDictionary[firstLetter] = {}
+                end
+                table.insert(WordDictionary[firstLetter], wordLower)
+            end
+            loaded = true
+            return true
+        end
+    end)
+    
+    loaded = true
+end
+
+spawn(LoadWords)
+
+local function SuggestWords(input, count)
+    if not loaded then 
+        return {"loading words...", "please wait"}
+    end
+    if #Words == 0 then 
+        return {"no words available", "check connection"}
+    end
+    
+    input = input:lower()
+    
+    local cacheKey = input .. "_" .. count
+    if searchCache[cacheKey] then
+        return searchCache[cacheKey]
+    end
+    
+    local possible = {}
+    local results = {}
+    
+    local firstLetter = input:sub(1,1)
+    local wordList = WordDictionary[firstLetter] or {}
+    
+    local searchList = #wordList > 0 and wordList or Words
+    
+    for i = 1, #searchList do
+        local word = searchList[i]
+        if word:sub(1, #input) == input then
+            table.insert(possible, word)
+            if #possible >= 1000 then break end
+        end
+    end
+    
+    table.sort(possible, function(a, b)
+        return #a < #b
+    end)
+    
+    local maxResults = math.min(count, #possible)
+    for i = 1, maxResults do
+        table.insert(results, possible[i])
+    end
+    
+    if #possible > maxResults then
+        for i = 1, math.min(10, #possible - maxResults) do
+            local r = math.random(maxResults + 1, #possible)
+            table.insert(results, possible[r])
+        end
+    end
+    
+    searchCache[cacheKey] = results
+    if #searchCache > 100 then
+        local keys = {}
+        for k in pairs(searchCache) do
+            table.insert(keys, k)
+        end
+        for i = 1, 30 do
+            if keys[i] then
+                searchCache[keys[i]] = nil
+            end
+        end
+    end
+    
+    return results
+end
+
+local a = Instance.new("ScreenGui", game.CoreGui)
+a.Name = "WordSuggestor"
+
+local b = Instance.new("Frame", a)
+b.Size = UDim2.new(0, 250, 0, 400)
+b.Position = UDim2.new(0, 80, 0, 100)
+b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+b.BorderSizePixel = 0
+b.Active = true
+b.Draggable = true
+Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", b).Thickness = 1.5
+
+local title = Instance.new("TextLabel", b)
+title.Size = UDim2.new(1, -10, 0, 25)
+title.Position = UDim2.new(0,5,0,5)
+title.BackgroundTransparency = 1
+title.Text = "Type letters - get matching words"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextXAlignment = Enum.TextXAlignment.Center
+
+local settingsFrame = Instance.new("Frame", b)
+settingsFrame.Size = UDim2.new(1, -20, 0, 50)
+settingsFrame.Position = UDim2.new(0, 10, 0, 30)
+settingsFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+settingsFrame.BorderSizePixel = 0
+Instance.new("UICorner", settingsFrame).CornerRadius = UDim.new(0, 6)
+
+local minLabel = Instance.new("TextLabel", settingsFrame)
+minLabel.Size = UDim2.new(0.4, -5, 0, 20)
+minLabel.Position = UDim2.new(0, 5, 0, 5)
+minLabel.BackgroundTransparency = 1
+minLabel.Text = "Min: " .. minCharacters
+minLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+minLabel.Font = Enum.Font.Gotham
+minLabel.TextSize = 11
+minLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local minBox = Instance.new("TextBox", settingsFrame)
+minBox.Size = UDim2.new(0.4, -5, 0, 20)
+minBox.Position = UDim2.new(0.4, 5, 0, 5)
+minBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+minBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBox.Text = tostring(minCharacters)
+minBox.Font = Enum.Font.Gotham
+minBox.TextSize = 11
+minBox.PlaceholderText = "Min"
+Instance.new("UICorner", minBox).CornerRadius = UDim.new(0, 4)
+
+local maxLabel = Instance.new("TextLabel", settingsFrame)
+maxLabel.Size = UDim2.new(0.4, -5, 0, 20)
+maxLabel.Position = UDim2.new(0, 5, 0, 25)
+maxLabel.BackgroundTransparency = 1
+maxLabel.Text = "Max: " .. maxCharacters
+maxLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+maxLabel.Font = Enum.Font.Gotham
+maxLabel.TextSize = 11
+maxLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local maxBox = Instance.new("TextBox", settingsFrame)
+maxBox.Size = UDim2.new(0.4, -5, 0, 20)
+maxBox.Position = UDim2.new(0.4, 5, 0, 25)
+maxBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+maxBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+maxBox.Text = tostring(maxCharacters)
+maxBox.Font = Enum.Font.Gotham
+maxBox.TextSize = 11
+maxBox.PlaceholderText = "Max"
+Instance.new("UICorner", maxBox).CornerRadius = UDim.new(0, 4)
+
+local applyButton = Instance.new("TextButton", settingsFrame)
+applyButton.Size = UDim2.new(0.15, 0, 0, 40)
+applyButton.Position = UDim2.new(0.85, -5, 0.05, 0)
+applyButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+applyButton.Text = "Apply"
+applyButton.Font = Enum.Font.Gotham
+applyButton.TextSize = 11
+Instance.new("UICorner", applyButton).CornerRadius = UDim.new(0, 4)
+
+local info = Instance.new("TextLabel", b)
+info.Size = UDim2.new(1, -10, 0, 30)
+info.Position = UDim2.new(0,5,0,85)
+info.BackgroundTransparency = 1
+info.Text = "All words loaded without filtering (490k+)"
+info.TextColor3 = Color3.fromRGB(100, 255, 100)
+info.Font = Enum.Font.Gotham
+info.TextSize = 10
+info.TextXAlignment = Enum.TextXAlignment.Center
+info.TextWrapped = true
+
+local h = Instance.new("TextBox", b)
+h.PlaceholderText = "Type letters..."
+h.Size = UDim2.new(1, -20, 0, 30)
+h.Position = UDim2.new(0, 10, 0, 120)
+h.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+h.TextColor3 = Color3.fromRGB(255, 255, 255)
+h.Text = ""
+h.ClearTextOnFocus = false
+h.Font = Enum.Font.Gotham
+h.TextSize = 14
+h.TextXAlignment = Enum.TextXAlignment.Center
+Instance.new("UICorner", h).CornerRadius = UDim.new(0, 6)
+
+local list = Instance.new("ScrollingFrame", b)
+list.Size = UDim2.new(1, -20, 0, 185)
+list.Position = UDim2.new(0, 10, 0, 155)
+list.BackgroundTransparency = 1
+list.ScrollBarThickness = 6
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local uiList = Instance.new("UIListLayout", list)
+uiList.Padding = UDim.new(0, 2)
+uiList.SortOrder = Enum.SortOrder.LayoutOrder
+
+local pageFrame = Instance.new("Frame", b)
+pageFrame.Size = UDim2.new(1, -20, 0, 30)
+pageFrame.Position = UDim2.new(0, 10, 0, 345)
+pageFrame.BackgroundTransparency = 1
+
+local prevButton = Instance.new("TextButton", pageFrame)
+prevButton.Size = UDim2.new(0.2, 0, 1, 0)
+prevButton.Position = UDim2.new(0, 0, 0, 0)
+prevButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+prevButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+prevButton.Text = "< Prev"
+prevButton.Font = Enum.Font.Gotham
+prevButton.TextSize = 12
+Instance.new("UICorner", prevButton).CornerRadius = UDim.new(0, 4)
+
+local pageLabel = Instance.new("TextLabel", pageFrame)
+pageLabel.Size = UDim2.new(0.6, 0, 1, 0)
+pageLabel.Position = UDim2.new(0.2, 0, 0, 0)
+pageLabel.BackgroundTransparency = 1
+pageLabel.Text = "Page 1/1"
+pageLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+pageLabel.Font = Enum.Font.Gotham
+pageLabel.TextSize = 12
+pageLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+local nextButton = Instance.new("TextButton", pageFrame)
+nextButton.Size = UDim2.new(0.2, 0, 1, 0)
+nextButton.Position = UDim2.new(0.8, 0, 0, 0)
+nextButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+nextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+nextButton.Text = "Next >"
+nextButton.Font = Enum.Font.Gotham
+nextButton.TextSize = 12
+Instance.new("UICorner", nextButton).CornerRadius = UDim.new(0, 4)
+
+local function ClearSuggestions()
+    for _, child in ipairs(list:GetChildren()) do
+        if child:IsA("TextButton") or child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+end
+
+local status = Instance.new("TextLabel", b)
+status.Size = UDim2.new(1, -10, 0, 15)
+status.Position = UDim2.new(0,5,1,-20)
+status.BackgroundTransparency = 1
+status.Text = "Loading words..."
+status.TextColor3 = Color3.fromRGB(100, 255, 100)
+status.Font = Enum.Font.Gotham
+status.TextSize = 10
+status.TextXAlignment = Enum.TextXAlignment.Center
+
+local function UpdateSuggestions()
+    if not loaded then return end
+    
+    ClearSuggestions()
+
+    local text = h.Text
+    if #text < 1 then 
+        return 
+    end
+
+    local suggests = SuggestWords(text, 1000)
+    
+    if #suggests == 0 then
+        local message = Instance.new("TextLabel", list)
+        message.Size = UDim2.new(1, 0, 0, 22)
+        message.BackgroundTransparency = 1
+        message.Text = "No words found for: '" .. text .. "'"
+        message.TextColor3 = Color3.fromRGB(255, 100, 100)
+        message.Font = Enum.Font.Gotham
+        message.TextSize = 12
+        message.TextXAlignment = Enum.TextXAlignment.Center
+    else
+        local totalPages = math.ceil(#suggests / wordsPerPage)
+        local startIndex = (currentPage - 1) * wordsPerPage + 1
+        local endIndex = math.min(currentPage * wordsPerPage, #suggests)
+        
+        pageLabel.Text = "Page " .. currentPage .. "/" .. totalPages
+        prevButton.Visible = currentPage > 1
+        nextButton.Visible = currentPage < totalPages
+        
+        for i = startIndex, endIndex do
+            local word = suggests[i]
+            local btn = Instance.new("TextButton", list)
+            btn.Size = UDim2.new(1, 0, 0, 22)
+            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 12
+            btn.Text = word
+            btn.AutoButtonColor = true
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.Selectable = false
+            
+            btn.MouseButton1Click:Connect(function()
+                h.Text = word
+            end)
+        end
+    end
+end
+
+local function ReloadWords()
+    Words = {}
+    WordDictionary = {}
+    searchCache = {}
+    loaded = false
+    currentPage = 1
+    status.Visible = true
+    status.Text = "Reloading words..."
+    
+    ClearSuggestions()
+    
+    local message = Instance.new("TextLabel", list)
+    message.Size = UDim2.new(1, 0, 0, 22)
+    message.BackgroundTransparency = 1
+    message.Text = "Reloading words with new settings..."
+    message.TextColor3 = Color3.fromRGB(255, 255, 100)
+    message.Font = Enum.Font.Gotham
+    message.TextSize = 12
+    message.TextXAlignment = Enum.TextXAlignment.Center
+    
+    spawn(function()
+        LoadWords()
+        
+        while not loaded do
+            wait(0.1)
+        end
+        
+        status.Text = "Ready! " .. #Words .. " words loaded"
+        wait(1)
+        status.Visible = false
+        
+        if h.Text ~= "" then
+            UpdateSuggestions()
+        end
+    end)
+end
+
+local function ValidateMinMax()
+    if minCharacters > maxCharacters then
+        maxCharacters = minCharacters
+        maxBox.Text = tostring(maxCharacters)
+        maxLabel.Text = "Max: " .. maxCharacters
+    end
+end
+
+prevButton.MouseButton1Click:Connect(function()
+    if currentPage > 1 then
+        currentPage = currentPage - 1
+        UpdateSuggestions()
+    end
+end)
+
+nextButton.MouseButton1Click:Connect(function()
+    local text = h.Text
+    if #text < 1 then return end
+    
+    local suggests = SuggestWords(text, 1000)
+    local totalPages = math.ceil(#suggests / wordsPerPage)
+    
+    if currentPage < totalPages then
+        currentPage = currentPage + 1
+        UpdateSuggestions()
+    end
+end)
+
+applyButton.MouseButton1Click:Connect(function()
+    local minNum = tonumber(minBox.Text)
+    local maxNum = tonumber(maxBox.Text)
+    
+    if minNum and minNum >= 1 and minNum <= 100 then
+        minCharacters = minNum
+        minLabel.Text = "Min: " .. minCharacters
+    else
+        minBox.Text = tostring(minCharacters)
+    end
+    
+    if maxNum and maxNum >= 1 and maxNum <= 100 then
+        maxCharacters = maxNum
+        maxLabel.Text = "Max: " .. maxCharacters
+    else
+        maxBox.Text = tostring(maxCharacters)
+    end
+    
+    ValidateMinMax()
+    ReloadWords()
+end)
+
+h:GetPropertyChangedSignal("Text"):Connect(function()
+    currentPage = 1
+    if not loaded then
+        ClearSuggestions()
+        local message = Instance.new("TextLabel", list)
+        message.Size = UDim2.new(1, 0, 0, 22)
+        message.BackgroundTransparency = 1
+        message.Text = "Loading words, please wait..."
+        message.TextColor3 = Color3.fromRGB(255, 255, 100)
+        message.Font = Enum.Font.Gotham
+        message.TextSize = 12
+        message.TextXAlignment = Enum.TextXAlignment.Center
+        return
+    end
+    
+    spawn(function()
+        wait(0.1)
+        if h.Text == "" then
+            ClearSuggestions()
+            pageLabel.Text = "Page 1/1"
+            prevButton.Visible = false
+            nextButton.Visible = false
+            return
+        end
+        UpdateSuggestions()
+    end)
+end)
+
+spawn(function()
+    while not loaded do
+        wait(0.1)
+    end
+    status.Text = "Ready! " .. #Words .. " words loaded"
+    wait(3)
+    status.Visible = false
+    if h.Text ~= "" then
+        UpdateSuggestions()
+    end
+end)
