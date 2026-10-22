@@ -1048,19 +1048,35 @@ task.spawn(function()
         if not ok then print("[BOT] ERROR:", err) end
     end
 
+    local Players = game:GetService("Players")
+    local LP = Players.LocalPlayer
     if CG:FindFirstChild("BotUI") then CG.BotUI:Destroy() end 
     if CG:FindFirstChild("BotSplash") then CG.BotSplash:Destroy() end 
+    if LP and LP:FindFirstChild("PlayerGui") then
+        if LP.PlayerGui:FindFirstChild("BotUI") then LP.PlayerGui.BotUI:Destroy() end
+        if LP.PlayerGui:FindFirstChild("BotSplash") then LP.PlayerGui.BotSplash:Destroy() end
+    end
 
     local sg=Instance.new("ScreenGui") 
     sg.Name="BotUI" 
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.DisplayOrder = 9999
     sg.Parent=CG 
 
     local frame=Instance.new("Frame") 
     frame.Size=UDim2.new(0,200,0,170) 
-    frame.Position=UDim2.new(0.5,-100,0.82,-70) 
+    frame.Position=UDim2.new(0.5,-100,0.5,-85) 
     frame.BackgroundColor3=Color3.fromRGB(30,30,30) 
-    frame.BorderSizePixel=0 frame.Active=true frame.Draggable=true frame.Parent=sg 
-    local cnr=Instance.new("UICorner") cnr.CornerRadius=UDim.new(0,6) cnr.Parent=frame 
+    frame.BorderSizePixel=2
+    frame.BorderColor3=Color3.fromRGB(0,255,0)
+    frame.Active=true 
+    frame.Draggable=true 
+    frame.Parent=sg 
+    
+    local cnr=Instance.new("UICorner") 
+    cnr.CornerRadius=UDim.new(0,6) 
+    cnr.Parent=frame 
     
     local btnTurn=Instance.new("TextButton") 
     btnTurn.Size=UDim2.new(0,180,0,32) 
@@ -1221,6 +1237,9 @@ Best for: Flawless, defensive, error-free chess.
 
     local splash = Instance.new("ScreenGui")
     splash.Name = "BotSplash"
+    splash.ResetOnSpawn = false
+    splash.IgnoreGuiInset = true
+    splash.DisplayOrder = 10000
     splash.Parent = CG
 
     local sFrame = Instance.new("Frame")
@@ -1265,10 +1284,13 @@ Click anywhere on this box to close.
     sBg.Size = UDim2.new(1, 0, 1, 0)
     sBg.BackgroundTransparency = 1
     sBg.Text = ""
+    sBg.ZIndex = 10
     sBg.Parent = sFrame
 
     sBg.MouseButton1Click:Connect(function()
         splash:Destroy()
-        playSafe(btnTurn)
+        task.spawn(function()
+            playSafe(btnTurn)
+        end)
     end)
 end)
