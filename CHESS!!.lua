@@ -234,7 +234,7 @@ task.spawn(function()
                 end 
             end 
         end 
-        return g, models, kings
+        return g, models, kings 
     end 
 
     local function fixKings(g, models, kings)
@@ -1051,58 +1051,9 @@ task.spawn(function()
     if CG:FindFirstChild("BotUI") then CG.BotUI:Destroy() end 
     if CG:FindFirstChild("BotSplash") then CG.BotSplash:Destroy() end 
 
-    local splash = Instance.new("ScreenGui")
-    splash.Name = "BotSplash"
-    splash.Parent = CG
-
-    local sFrame = Instance.new("Frame")
-    sFrame.Size = UDim2.new(0, 500, 0, 400)
-    sFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-    sFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    sFrame.BorderSizePixel = 0
-    sFrame.Parent = splash
-
-    local sCorner = Instance.new("UICorner")
-    sCorner.CornerRadius = UDim.new(0, 8)
-    sCorner.Parent = sFrame
-
-    local sText = Instance.new("TextLabel")
-    sText.Size = UDim2.new(1, -40, 1, -100)
-    sText.Position = UDim2.new(0, 20, 0, 20)
-    sText.BackgroundTransparency = 1
-    sText.TextColor3 = Color3.new(1, 1, 1)
-    sText.TextXAlignment = Enum.TextXAlignment.Left
-    sText.TextYAlignment = Enum.TextYAlignment.Top
-    sText.TextWrapped = true
-    sText.Font = Enum.Font.SourceSans
-    sText.TextSize = 16
-    sText.Text = [[WELCOME TO CHESS BOT [RELEASE]
-
-HOW TO USE:
-1. Click the "WHITE/BLACK [R]" button to select the side you are playing.
-2. Press the "R" key on your keyboard (or click the button) to make the bot think and highlight its move.
-3. Follow the GREEN highlight (destination cell) and BLUE highlight (piece to move).
-4. Click "MODE" to cycle through different bot personalities (BALANCED, MATE, GENOCIDE, ADAPTIVE, SOLID).
-5. Click "HELP / MODE GUIDE" for detailed descriptions of each mode.
-6. Click "LOG" to copy the full move history to your clipboard.
-
-DISCLAIMER:
-This bot is designed as a HELPER for the player. It provides suggestions and tactical moves, but it cannot replace human intelligence, intuition, or game sense. Use it to assist your gameplay and learn chess, not to fully automate it. Play fair and have fun!
-
-Click anywhere on this box to close.
-]]
-    sText.Parent = sFrame
-
-    local sBg = Instance.new("TextButton")
-    sBg.Size = UDim2.new(1, 0, 1, 0)
-    sBg.BackgroundTransparency = 1
-    sBg.Text = ""
-    sBg.Parent = sFrame
-
-    sBg.MouseButton1Click:Connect(function()
-        splash:Destroy()
-        playSafe(btnTurn)
-    end)
+    local sg=Instance.new("ScreenGui") 
+    sg.Name="BotUI" 
+    sg.Parent=CG 
 
     local frame=Instance.new("Frame") 
     frame.Size=UDim2.new(0,200,0,170) 
@@ -1267,4 +1218,57 @@ Best for: Flawless, defensive, error-free chess.
         if setcl then setcl(txt) btnLog.Text="COPIED!" else print(txt) btnLog.Text="IN CONSOLE!" end 
         task.wait(1) btnLog.Text="LOG" 
     end) 
+
+    local splash = Instance.new("ScreenGui")
+    splash.Name = "BotSplash"
+    splash.Parent = CG
+
+    local sFrame = Instance.new("Frame")
+    sFrame.Size = UDim2.new(0, 500, 0, 400)
+    sFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    sFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    sFrame.BorderSizePixel = 0
+    sFrame.Parent = splash
+
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(0, 8)
+    sCorner.Parent = sFrame
+
+    local sText = Instance.new("TextLabel")
+    sText.Size = UDim2.new(1, -40, 1, -100)
+    sText.Position = UDim2.new(0, 20, 0, 20)
+    sText.BackgroundTransparency = 1
+    sText.TextColor3 = Color3.new(1, 1, 1)
+    sText.TextXAlignment = Enum.TextXAlignment.Left
+    sText.TextYAlignment = Enum.TextYAlignment.Top
+    sText.TextWrapped = true
+    sText.Font = Enum.Font.SourceSans
+    sText.TextSize = 16
+    sText.Text = [[WELCOME TO CHESS BOT [RELEASE]
+
+HOW TO USE:
+1. Click the "WHITE/BLACK [R]" button to select the side you are playing.
+2. Press the "R" key on your keyboard (or click the button) to make the bot think and highlight its move.
+3. Follow the GREEN highlight (destination cell) and BLUE highlight (piece to move).
+4. Click "MODE" to cycle through different bot personalities (BALANCED, MATE, GENOCIDE, ADAPTIVE, SOLID).
+5. Click "HELP / MODE GUIDE" for detailed descriptions of each mode.
+6. Click "LOG" to copy the full move history to your clipboard.
+
+DISCLAIMER:
+This bot is designed as a HELPER for the player. It provides suggestions and tactical moves, but it cannot replace human intelligence, intuition, or game sense. Use it to assist your gameplay and learn chess, not to fully automate it. Play fair and have fun!
+
+Click anywhere on this box to close.
+]]
+    sText.Parent = sFrame
+
+    local sBg = Instance.new("TextButton")
+    sBg.Size = UDim2.new(1, 0, 1, 0)
+    sBg.BackgroundTransparency = 1
+    sBg.Text = ""
+    sBg.Parent = sFrame
+
+    sBg.MouseButton1Click:Connect(function()
+        splash:Destroy()
+        playSafe(btnTurn)
+    end)
 end)
