@@ -1266,15 +1266,18 @@ Best for: Flawless, defensive, error-free chess.
     sText.Text = [[WELCOME TO CHESS BOT [RELEASE]
 
 HOW TO USE:
-1. Click the "WHITE/BLACK [R]" button to select the side you are playing.
-2. Press the "R" key on your keyboard (or click the button) to make the bot think and highlight its move.
-3. Follow the GREEN highlight (destination cell) and BLUE highlight (piece to move).
-4. Click "MODE" to cycle through different bot personalities (BALANCED, MATE, GENOCIDE, ADAPTIVE, SOLID).
+1. Click the "WHITE/BLACK [R]" button to select your side.
+2. Press the "R" key (or click the button) to make the bot calculate and highlight its move.
+3. Follow the GREEN highlight (destination) and BLUE highlight (piece to move).
+4. Click "MODE" to cycle through personalities (BALANCED, MATE, GENOCIDE, ADAPTIVE, SOLID).
 5. Click "HELP / MODE GUIDE" for detailed descriptions of each mode.
-6. Click "LOG" to copy the full move history to your clipboard.
+6. Click "LOG" to copy the move history to your clipboard.
+
+WARNING:
+Use ONLY default piece skins! Custom or non-standard colors can break the bot's piece detection logic and cause it to malfunction.
 
 DISCLAIMER:
-This bot is designed as a HELPER for the player. It provides suggestions and tactical moves, but it cannot replace human intelligence, intuition, or game sense. Use it to assist your gameplay and learn chess, not to fully automate it. Play fair and have fun!
+This bot is a HELPER. It provides suggestions and tactical moves, but cannot replace human intelligence or game sense. Use it to assist your gameplay and learn chess, not to fully automate it. Play fair and have fun!
 
 Click anywhere on this box to close.
 ]]
