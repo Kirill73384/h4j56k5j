@@ -234,11 +234,6 @@ task.spawn(function()
                 end 
             end 
         end 
-        local wc, bc = 0, 0
-        for i=1,64 do
-            if g[i] > 0 then wc = wc + 1 elseif g[i] < 0 then bc = bc + 1 end
-        end
-        print(string.format("[BOT] Scan: White=%d Black=%d Kings=%d Turn=%s Mode=%s", wc, bc, #kings, turn, MODE))
         return g, models, kings
     end 
 
@@ -925,7 +920,7 @@ task.spawn(function()
         local g,models,kings = scanBoard() 
         local okBot, okEnemy = fixKings(g, models, kings)
         if not okBot or not okEnemy then 
-            print("[BOT] WARNING: Kings not found! (myKing:", okBot, "enemyKing:", okEnemy, ")")
+            print("[BOT] WARNING: Kings not found!")
             return 
         end 
         detectOpp(g) 
@@ -943,7 +938,6 @@ task.spawn(function()
             if lineMove and lineDepth >= 8 and lineScore >= 0 then
                 best = lineMove; bestScore = lineScore; finalDepth = lineDepth
                 fromLine = true; elapsed = 0
-                print(string.format("[BOT] LINE HIT! Depth=%d Score=%.0f", lineDepth, lineScore))
             end
         end
 
@@ -988,7 +982,6 @@ task.spawn(function()
 
                 if MODE == "ADAPTIVE" and d >= 8 then
                     if best == prevBestMove1 and best == prevBestMove2 then
-                        print(string.format("[BOT] ADAPTIVE: Stable at depth %d, stopping early.", d))
                         break
                     end
                     prevBestMove2 = prevBestMove1
@@ -1056,8 +1049,61 @@ task.spawn(function()
     end
 
     if CG:FindFirstChild("BotUI") then CG.BotUI:Destroy() end 
-    local sg=Instance.new("ScreenGui") sg.Name="BotUI" sg.Parent=CG 
-    
+    if CG:FindFirstChild("BotSplash") then CG.BotSplash:Destroy() end 
+
+    local splash = Instance.new("ScreenGui")
+    splash.Name = "BotSplash"
+    splash.Parent = CG
+
+    local sFrame = Instance.new("Frame")
+    sFrame.Size = UDim2.new(0, 500, 0, 400)
+    sFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    sFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    sFrame.BorderSizePixel = 0
+    sFrame.Parent = splash
+
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(0, 8)
+    sCorner.Parent = sFrame
+
+    local sText = Instance.new("TextLabel")
+    sText.Size = UDim2.new(1, -40, 1, -100)
+    sText.Position = UDim2.new(0, 20, 0, 20)
+    sText.BackgroundTransparency = 1
+    sText.TextColor3 = Color3.new(1, 1, 1)
+    sText.TextXAlignment = Enum.TextXAlignment.Left
+    sText.TextYAlignment = Enum.TextYAlignment.Top
+    sText.TextWrapped = true
+    sText.Font = Enum.Font.SourceSans
+    sText.TextSize = 16
+    sText.Text = [[WELCOME TO CHESS BOT [RELEASE]
+
+HOW TO USE:
+1. Click the "WHITE/BLACK [R]" button to select the side you are playing.
+2. Press the "R" key on your keyboard (or click the button) to make the bot think and highlight its move.
+3. Follow the GREEN highlight (destination cell) and BLUE highlight (piece to move).
+4. Click "MODE" to cycle through different bot personalities (BALANCED, MATE, GENOCIDE, ADAPTIVE, SOLID).
+5. Click "HELP / MODE GUIDE" for detailed descriptions of each mode.
+6. Click "LOG" to copy the full move history to your clipboard.
+
+DISCLAIMER:
+This bot is designed as a HELPER for the player. It provides suggestions and tactical moves, but it cannot replace human intelligence, intuition, or game sense. Use it to assist your gameplay and learn chess, not to fully automate it. Play fair and have fun!
+
+Click anywhere on this box to close.
+]]
+    sText.Parent = sFrame
+
+    local sBg = Instance.new("TextButton")
+    sBg.Size = UDim2.new(1, 0, 1, 0)
+    sBg.BackgroundTransparency = 1
+    sBg.Text = ""
+    sBg.Parent = sFrame
+
+    sBg.MouseButton1Click:Connect(function()
+        splash:Destroy()
+        playSafe(btnTurn)
+    end)
+
     local frame=Instance.new("Frame") 
     frame.Size=UDim2.new(0,200,0,170) 
     frame.Position=UDim2.new(0.5,-100,0.82,-70) 
@@ -1221,7 +1267,4 @@ Best for: Flawless, defensive, error-free chess.
         if setcl then setcl(txt) btnLog.Text="COPIED!" else print(txt) btnLog.Text="IN CONSOLE!" end 
         task.wait(1) btnLog.Text="LOG" 
     end) 
-
-    task.wait(1) 
-    playSafe(btnTurn)
 end)
